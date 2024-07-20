@@ -7,29 +7,48 @@ tab = '    '
 res = []
 test_lines = []
 
+def cut_graph(pref, substr):
+    global res
+
+    try:
+        pos = test_lines.index(tab + f"GRAPH({substr})")
+    except ValueError:
+        raise ValueError(test + ' failed')
+    assert test_lines[pos + 1] == tab + '{'
+    end = test_lines.index(tab + '}', pos)
+    meth = pref.upper() + f'({test}, Graph *graph)'
+    print(tab + meth)
+    
+    res.append(meth)
+    res.append('{')
+    res.append(tab + "GRAPH(graph)")
+    res += test_lines[pos+1:end + 1]
+    res.append('}')
+    res.append('')
+
+    return pos, end, f"{tab}{pref}::{test}::CREATE({substr});"
+
 def finish_test():
     global res
     if len(test_lines) <= 50:
         res += test_lines
         return
-    try:
-        pos = test_lines.index(tab + 'GRAPH(GetGraph())')
-    except ValueError:
-        res += test_lines
-        print(test + ' failed')
-        return
-    assert test_lines[pos + 1] == tab + '{'
-    end = test_lines.index(tab + '}')
 
-    meth = 'BuildGraph' + test + '()'
-    print(tab + 'void ' + meth + ';')
-    
-    res.append('void ' + suite + '::' + meth)
-    res.append('{')
-    res += test_lines[pos:end + 1]
-    res.append('}')
-    res.append('')
-    res += test_lines[:pos] + [tab + meth + ';'] + test_lines[end + 1:]
+    pos_src, end_src, src_creat = cut_graph("src_graph", "GetGraph()")
+    try:
+        pos_out, end_out, out_creat = cut_graph("out_graph", "graph")
+    except ValueError:
+        res += test_lines[:pos_src]
+        res.append(src_creat)
+        res += test_lines[end_src + 1:]
+        return
+
+    res += test_lines[:pos_src]
+    res.append(src_creat)
+    res += test_lines[end_src + 1:pos_out]
+    res.append(out_creat)
+    res += test_lines[end_out + 1:]
+
 
 with open(sys.argv[1], 'r') as f:
     ls = f.read().split('\n')

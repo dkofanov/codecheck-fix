@@ -13,6 +13,7 @@ IGNORE = [
     "ReuseExistingSpillFillAtTheEndOfBlock",
     "SkipIntervalsCoveringOnlyBlockStart",
     "ConnectIntervalsForConstantBetweenBlock",
+    "CompareTest4",
 ]
 
 def cut_graph(pref, substr):
@@ -47,11 +48,11 @@ def find_graph_name(start = 0):
 
 def finish_test():
     global res
-    if len(test_lines) <= 50 or test in IGNORE:
+    n = find_graph_name()
+    if len(test_lines) <= 50 or test in IGNORE or not n:
         res += test_lines
         return
 
-    n = find_graph_name()
     pos_src, end_src, src_creat = cut_graph("src_graph", n)
     
     try:

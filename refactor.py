@@ -50,8 +50,7 @@ def finish_test():
         break
     
     if not found:
-        raise ValueError()
-    
+        raise ValueError(test + ' failed')
     
     found = False
     for n in avaliable_graph_names:

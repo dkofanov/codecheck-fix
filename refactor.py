@@ -7,6 +7,14 @@ tab = '    '
 res = []
 test_lines = []
 
+IGNORE = [
+    "DontReuseSpillFillForConstant", 
+    "DontReuseInstructionSpillFills",
+    "ReuseExistingSpillFillAtTheEndOfBlock",
+    "SkipIntervalsCoveringOnlyBlockStart",
+    "ConnectIntervalsForConstantBetweenBlock",
+]
+
 def cut_graph(pref, substr):
     global res
 
@@ -17,7 +25,7 @@ def cut_graph(pref, substr):
     assert test_lines[pos + 1] == tab + '{'
     end = test_lines.index(tab + '}', pos)
     meth = pref.upper() + f'({test}, Graph *graph)'
-    print(tab + meth)
+    print(f"{tab + meth} <- {substr}")
     
     res.append(meth)
     res.append('{')
@@ -28,50 +36,38 @@ def cut_graph(pref, substr):
 
     return pos, end, f"{tab}{pref}::{test}::CREATE({substr});"
 
+
+def find_graph_name(start = 0):
+    for i in range(start, len(test_lines)):
+        l = test_lines[i]
+        if l.startswith(tab + f"GRAPH"):
+            m = re.match(tab + f"GRAPH\((.*)\)$", l)
+            return m.group(1)
+
+
 def finish_test():
     global res
-    if len(test_lines) <= 50:
+    if len(test_lines) <= 50 or test in IGNORE:
         res += test_lines
         return
-    avaliable_graph_names = [
-        "GetGraph()", "graph", "defaultGraph","initialGraph",  "graph1","graphEt", "graph2", "expectedGraph",
-        "sunkGraph", "graphCsed", "expected", "graphLsed", "optGraph", "optimizedGraph", "optimizableGraph", 
-        "optimizableGraphAfter", "finalGraph", "graphPeepholed", "graphNotOptimizable", 
-    ]
 
-    found = False
-    for n in avaliable_graph_names:
-        try:
-            pos_src, end_src, src_creat = cut_graph("src_graph", n)
-        except ValueError:
-            continue
-        avaliable_graph_names.remove(n)
-        found = True
-        break
+    n = find_graph_name()
+    pos_src, end_src, src_creat = cut_graph("src_graph", n)
     
-    if not found:
-        raise ValueError(test + ' failed')
-    
-    found = False
-    for n in avaliable_graph_names:
-        try:
-            pos_out, end_out, out_creat = cut_graph("out_graph", n)
-        except ValueError:
-            continue
-        avaliable_graph_names.remove(n)
-        found = True
-        break
-    
-    if not found:
+    try:
+        n = find_graph_name(pos_src + 1)
+        pos_out, end_out, out_creat = cut_graph("out_graph", n)
+    except ValueError:
         res += test_lines[:pos_src]
         res.append(src_creat)
         res += test_lines[end_src + 1:]
-    else:
-        res += test_lines[:pos_src]
-        res.append(src_creat)
-        res += test_lines[end_src + 1:pos_out]
-        res.append(out_creat)
-        res += test_lines[end_out + 1:]
+        return
+
+    res += test_lines[:pos_src]
+    res.append(src_creat)
+    res += test_lines[end_src + 1:pos_out]
+    res.append(out_creat)
+    res += test_lines[end_out + 1:]
 
 
 with open(sys.argv[1], 'r') as f:

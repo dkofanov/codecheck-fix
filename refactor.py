@@ -33,21 +33,46 @@ def finish_test():
     if len(test_lines) <= 50:
         res += test_lines
         return
+    avaliable_graph_names = [
+        "GetGraph()", "graph", "defaultGraph","initialGraph",  "graph1","graphEt", "graph2", "expectedGraph",
+        "sunkGraph", "graphCsed", "expected", "graphLsed", "optGraph", "optimizedGraph", "optimizableGraph", 
+        "optimizableGraphAfter", "finalGraph", "graphPeepholed", "graphNotOptimizable", 
+    ]
 
-    pos_src, end_src, src_creat = cut_graph("src_graph", "GetGraph()")
-    try:
-        pos_out, end_out, out_creat = cut_graph("out_graph", "graph")
-    except ValueError:
+    found = False
+    for n in avaliable_graph_names:
+        try:
+            pos_src, end_src, src_creat = cut_graph("src_graph", n)
+        except ValueError:
+            continue
+        avaliable_graph_names.remove(n)
+        found = True
+        break
+    
+    if not found:
+        raise ValueError()
+    
+    
+    found = False
+    for n in avaliable_graph_names:
+        try:
+            pos_out, end_out, out_creat = cut_graph("out_graph", n)
+        except ValueError:
+            continue
+        avaliable_graph_names.remove(n)
+        found = True
+        break
+    
+    if not found:
         res += test_lines[:pos_src]
         res.append(src_creat)
         res += test_lines[end_src + 1:]
-        return
-
-    res += test_lines[:pos_src]
-    res.append(src_creat)
-    res += test_lines[end_src + 1:pos_out]
-    res.append(out_creat)
-    res += test_lines[end_out + 1:]
+    else:
+        res += test_lines[:pos_src]
+        res.append(src_creat)
+        res += test_lines[end_src + 1:pos_out]
+        res.append(out_creat)
+        res += test_lines[end_out + 1:]
 
 
 with open(sys.argv[1], 'r') as f:
